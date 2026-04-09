@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나만의 심리 성장 기록장</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic', sans-serif; background: #f9fbed; color: #333; min-height: 100vh; }
+
+#lock-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.lock-card {
+  background: #fff; border-radius: 20px; padding: 44px 36px 36px;
+  width: 290px; display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.10);
+}
+.lock-icon { font-size: 46px; margin-bottom: 26px; }
+.dots { display: flex; gap: 16px; margin-bottom: 30px; }
+.dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #799a3d; background: transparent; transition: background .12s; }
+.dot.on { background: #799a3d; }
+.numpad { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(4, 64px); gap: 8px; }
+.nk {
+  background: #f2f5e8; border: none; border-radius: 10px;
+  font-size: 22px; font-weight: 700; color: #333; cursor: pointer;
+  width: 80px; height: 64px; display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.nk:active { background: #c8d890; }
+.nk.back { font-size: 18px; color: #777; background: #eee; }
+.nk.blank { visibility: hidden; pointer-events: none; }
+.err { margin-top: 16px; min-height: 18px; font-size: 13px; color: #c0392b; text-align: center; }
+
+#main-app { display: none; max-width: 800px; margin: 0 auto; padding: 20px; }
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.top-bar h1 { font-size: 22px; color: #4a5d23; }
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 3px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.card h2 { color: #4a5d23; margin-bottom: 14px; font-size: 18px; }
+label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; margin-top: 4px; }
+select, textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; margin-bottom: 14px; background: #fff; color: #333;
+}
+textarea { min-height: 100px; resize: vertical; }
+.btn-green { background: #799a3d; color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.btn-green:active { background: #5c752d; }
+.btn-gray { background: #aaa; color: #fff; border: none; padding: 9px 15px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-gray:active { background: #888; }
+.diary-entry { border-left: 4px solid #799a3d; background: #fdfdfd; padding: 14px; margin-bottom: 10px; border-radius: 4px; }
+.etag { display: inline-block; background: #e8f0d1; color: #4a5d23; border-radius: 12px; padding: 3px 9px; font-size: 12px; font-weight: 700; }
+.edate { font-size: 12px; color: #999; margin-left: 8px; }
+.ai-box { background: #f0f7ff; border-left: 4px solid #4a90e2; padding: 14px; border-radius: 4px; margin-top: 14px; white-space: pre-wrap; line-height: 1.6; display: none; }
+.loading-msg { color: #888; font-style: italic; display: none; margin-top: 10px; font-size: 14px; }
+
+#pw-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 100; }
+#pw-modal.open { display: flex; }
+.modal-card {
+  background: #fff; border-radius: 18px; padding: 32px 28px 24px; width: 290px;
+  display: flex; flex-direction: column; align-items: center; box-shadow: 0 6px 28px rgba(0,0,0,0.16);
+}
+.modal-card h3 { color: #4a5d23; margin-bottom: 14px; font-size: 17px; }
+#m-status { font-size: 13px; color: #555; min-height: 18px; margin: 6px 0 14px; text-align: center; }
+.modal-foot { display: flex; justify-content: flex-end; width: 100%; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<div id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-icon">&#128274;</div>
+    <div class="dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+    <div class="numpad">
+      <button class="nk" data-n="1">1</button>
+      <button class="nk" data-n="2">2</button>
+      <button class="nk" data-n="3">3</button>
+      <button class="nk" data-n="4">4</button>
+      <button class="nk" data-n="5">5</button>
+      <button class="nk" data-n="6">6</button>
+      <button class="nk" data-n="7">7</button>
+      <button class="nk" data-n="8">8</button>
+      <button class="nk" data-n="9">9</button>
+      <button class="nk blank"></button>
+      <button class="nk" data-n="0">0</button>
+      <button class="nk back" id="lock-del">&#9003;</button>
+    </div>
+    <div class="err" id="lock-err"></div>
+  </div>
+</div>
+
+<div id="pw-modal">
+  <div class="modal-card">
+    <h3>비밀번호 변경</h3>
+    <div class="dots">
+      <div class="dot" id="md0"></div>
+      <div class="dot" id="md1"></div>
+      <div class="dot" id="md2"></div>
+      <div class="dot" id="md3"></div>
+    </div>
+    <div id="m-status">현재 비밀번호를 입력하세요</div>
+    <div class="numpad">
+      <button class="nk" data-m="1">1</button>
+      <button class="nk" data-m="2">2</button>
+      <button class="nk" data-m="3">3</button>
+      <button class="nk" data-m="4">4</button>
+      <button class="nk" data-m="5">5</button>
+      <button class="nk" data-m="6">6</button>
+      <button class="nk" data-m="7">7</button>
+      <button class="nk" data-m="8">8</button>
+      <button class="nk" data-m="9">9</button>
+      <button class="nk blank"></button>
+      <button class="nk" data-m="0">0</button>
+      <button class="nk back" id="modal-del">&#9003;</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-gray" id="modal-cancel">취소</button>
+    </div>
+  </div>
+</div>
+
+<div id="main-app">
+  <div class="top-bar">
+    <h1>&#127807; 나만의 심리 성장 기록장</h1>
+    <button class="btn-gray" id="open-pw-btn">비밀번호 변경</button>
+  </div>
+  <div class="card">
+    <h2>&#9997;&#65039; 오늘의 기록</h2>
+    <label>어떤 감정의 일인가요?</label>
+    <select id="emotion">
+      <option value="좋았던 일">좋았던 일</option>
+      <option value="슬펐던 일">슬펐던 일</option>
+      <option value="자존심 상했던 일">자존심 상했던 일</option>
+      <option value="깨달음을 얻은 일">깨달음을 얻은 일</option>
+    </select>
+    <label>무슨 일이 있었나요? 편하게 적어주세요.</label>
+    <textarea id="diary-content" placeholder="오늘 있었던 일과 감정을 자유롭게 적어보세요..."></textarea>
+    <button class="btn-green" id="save-btn">기록 저장하기</button>
+  </div>
+  <div class="card">
+    <h2>AI 심리 전문가에게 조언 구하기</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:12px;">과거의 내 기록들을 바탕으로 현재의 고민에 대한 조언을 들어보세요.</p>
+    <label>현재 직면한 상황이나 고민을 적어주세요:</label>
+    <textarea id="ai-input" placeholder="예: 학부모님이 오해를 하셔서 방어적으로 나오시는데, 어떻게 대응해야 할지 막막해..."></textarea>
+    <button class="btn-green" id="ai-btn">조언 구하기</button>
+    <div class="loading-msg" id="loading">AI 전문가가 분석 중입니다...</div>
+    <div class="ai-box" id="ai-response"></div>
+  </div>
+  <div class="card">
+    <h2>내 기록 보관함</h2>
+    <div id="diary-list"><p style="color:#bbb;">아직 저장된 기록이 없습니다.</p></div>
+  </div>
+</div>
+
+<script type="text/javascript">
+var SUPABASE_URL = "https://hqrxduhqkxjlndhexxau.supabase.co";
+var SUPABASE_KEY = "sb_publishable_d2wQl4H8JzNrUVldLM4Xvw_lmVvCeWy";
+
+function sbHeaders() {
+  return {
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json"
+  };
+}
+
+function sbGet(table, query) {
+  var url = SUPABASE_URL + "/rest/v1/" + table + "?" + (query || "order=created_at.desc");
+  return fetch(url, { headers: sbHeaders() }).then(function(r) { return r.json(); });
+}
+
+function sbPost(table, body) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + table, {
+    method: "POST",
+    headers: Object.assign({}, sbHeaders(), { "Prefer": "return=minimal" }),
+    body: JSON.stringify(body)
+  });
+}
+
+function sbPatch(table, query, body) {
+  return fetch(SUPABASE_URL + "/rest/v1/" + table + "?" + query, {
+    method: "PATCH",
+    headers: Object.assign({}, sbHeaders(), { "Prefer": "return=minimal" }),
+    body: JSON.stringify(body)
+  });
+}
+
+var cachedPin = null;
+var diaries = [];
+
+function getPin() {
+  if (cachedPin) return Promise.resolve(cachedPin);
+  return sbGet("app_config", "select=value&key=eq.pin").then(function(rows) {
+    cachedPin = (rows && rows[0]) ? rows[0].value : "0000";
+    return cachedPin;
+  }).catch(function() { return "0000"; });
+}
+
+function savePin(p) {
+  cachedPin = p;
+  return sbPatch("app_config", "key=eq.pin", { value: p });
+}
+
+function loadDiaries() {
+  return sbGet("diaries", "order=created_at.desc").then(function(rows) {
+    diaries = rows || [];
+    renderDiaries();
+  }).catch(function() {
+    diaries = [];
+    renderDiaries();
+  });
+}
+
+function setDots(prefix, n) {
+  for (var i = 0; i < 4; i++) {
+    var el = document.getElementById(prefix + i);
+    if (!el) continue;
+    if (i < n) el.classList.add("on");
+    else el.classList.remove("on");
+  }
+}
+
+function showLock() {
+  document.getElementById("lock-screen").style.display = "flex";
+  document.getElementById("main-app").style.display = "none";
+  lBuf = "";
+  lLock = false;
+  setDots("d", 0);
+  document.getElementById("lock-err").textContent = "";
+}
+
+function showMain() {
+  document.getElementById("lock-screen").style.display = "none";
+  document.getElementById("main-app").style.display = "block";
+  loadDiaries();
+}
+
+var lBuf = "";
+var lLock = false;
+
+document.querySelectorAll("[data-n]").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    if (lLock || lBuf.length >= 4) return;
+    lBuf += this.getAttribute("data-n");
+    setDots("d", lBuf.length);
+    document.getElementById("lock-err").textContent = "";
+    if (lBuf.length === 4) {
+      lLock = true;
+      var entered = lBuf;
+      lBuf = "";
+      setTimeout(function() {
+        setDots("d", 0);
+        getPin().then(function(pin) {
+          if (entered === pin) {
+            lLock = false;
+            showMain();
+          } else {
+            document.getElementById("lock-err").textContent = "비밀번호가 맞지 않습니다.";
+            lLock = false;
+          }
+        });
+      }, 160);
+    }
+  });
+});
+
+document.getElementById("lock-del").addEventListener("click", function() {
+  if (lLock) return;
+  lBuf = lBuf.slice(0, -1);
+  setDots("d", lBuf.length);
+  document.getElementById("lock-err").textContent = "";
+});
+
+var mStep = "current";
+var mBuf = "";
+var mLock = false;
+var mNew = "";
+
+function setMStatus(color, text) {
+  var el = document.getElementById("m-status");
+  el.style.color = color;
+  el.textContent = text;
+}
+
+document.getElementById("open-pw-btn").addEventListener("click", function() {
+  mStep = "current"; mBuf = ""; mNew = ""; mLock = false;
+  setDots("md", 0);
+  setMStatus("#555", "현재 비밀번호를 입력하세요");
+  document.getElementById("pw-modal").style.display = "flex";
+});
+
+document.getElementById("modal-cancel").addEventListener("click", function() {
+  document.getElementById("pw-modal").style.display = "none";
+});
+
+document.querySelectorAll("[data-m]").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    if (mLock || mBuf.length >= 4) return;
+    mBuf += this.getAttribute("data-m");
+    setDots("md", mBuf.length);
+    if (mBuf.length === 4) {
+      mLock = true;
+      var entered = mBuf;
+      mBuf = "";
+      setTimeout(function() {
+        setDots("md", 0);
+        mLock = false;
+        if (mStep === "current") {
+          getPin().then(function(pin) {
+            if (entered === pin) {
+              mStep = "new";
+              setMStatus("#555", "새 비밀번호를 입력하세요");
+            } else {
+              setMStatus("#c0392b", "현재 비밀번호가 틀렸습니다");
+            }
+          });
+        } else if (mStep === "new") {
+          mNew = entered;
+          mStep = "confirm";
+          setMStatus("#555", "새 비밀번호를 다시 입력하세요");
+        } else if (mStep === "confirm") {
+          if (entered === mNew) {
+            savePin(mNew).then(function() {
+              setMStatus("#27ae60", "비밀번호가 변경되었습니다");
+              setTimeout(function() {
+                document.getElementById("pw-modal").style.display = "none";
+              }, 1000);
+            });
+          } else {
+            setMStatus("#c0392b", "일치하지 않습니다. 새 비밀번호부터 다시 입력하세요");
+            mStep = "new";
+            mNew = "";
+          }
+        }
+      }, 160);
+    }
+  });
+});
+
+document.getElementById("modal-del").addEventListener("click", function() {
+  if (mLock) return;
+  mBuf = mBuf.slice(0, -1);
+  setDots("md", mBuf.length);
+});
+
+document.getElementById("save-btn").addEventListener("click", function() {
+  var emotion = document.getElementById("emotion").value;
+  var content = document.getElementById("diary-content").value.trim();
+  if (!content) { alert("내용을 입력해주세요!"); return; }
+  var date = new Date().toLocaleDateString("ko-KR");
+  sbPost("diaries", { emotion: emotion, content: content, date: date }).then(function() {
+    document.getElementById("diary-content").value = "";
+    alert("기록이 저장되었습니다.");
+    loadDiaries();
+  }).catch(function() {
+    alert("저장 중 오류가 발생했습니다.");
+  });
+});
+
+function renderDiaries() {
+  var el = document.getElementById("diary-list");
+  if (!diaries.length) {
+    el.innerHTML = "<p style='color:#bbb;'>아직 저장된 기록이 없습니다.</p>";
+    return;
+  }
+  el.innerHTML = "";
+  diaries.forEach(function(d) {
+    var div = document.createElement("div");
+    div.className = "diary-entry";
+    div.innerHTML = "<span class='etag'>" + d.emotion + "</span><span class='edate'>" + d.date + "</span><p style='margin-top:10px;font-size:15px;'>" + d.content + "</p>";
+    el.appendChild(div);
+  });
+}
+
+document.getElementById("ai-btn").addEventListener("click", function() {
+  var problem = document.getElementById("ai-input").value.trim();
+  var respEl = document.getElementById("ai-response");
+  var loadEl = document.getElementById("loading");
+  if (!problem) { alert("현재 고민을 입력해주세요."); return; }
+  if (!diaries.length) { alert("먼저 일기를 1개 이상 저장해주세요."); return; }
+
+  var prompt = "당신은 공감 능력이 뛰어나면서도 상황을 객관적으로 분석하는 심리 전문가입니다.\n" +
+    "아래 과거 일기 기록들과 현재 상황을 참고하여, 실질적인 대처 방법을 긍정적으로 조언해 주세요.\n\n" +
+    "[과거 일기]:\n" + JSON.stringify(diaries) + "\n\n[현재 상황]:\n" + problem;
+
+  respEl.style.display = "none";
+  loadEl.style.display = "block";
+
+  fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }]
+    })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    var text = (data.content || []).map(function(b) { return b.type === "text" ? b.text : ""; }).join("\n");
+    respEl.innerHTML = "<strong>AI 심리 전문가의 조언:</strong><br><br>" + text;
+    respEl.style.display = "block";
+  }).catch(function() {
+    respEl.innerHTML = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+    respEl.style.display = "block";
+  }).finally(function() {
+    loadEl.style.display = "none";
+  });
+});
+
+showLock();
+</script>
+</body>
+</html>
