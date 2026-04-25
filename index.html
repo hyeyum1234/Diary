@@ -825,10 +825,8 @@ document.getElementById("ai-btn").addEventListener("click", function() {
   }).then(function(r) { return r.json(); })
   .then(function(data) {
     loadEl.style.display = "none";
-    if (data.error) { errEl.innerHTML = "API 오류 (" + data.error.code + "): " + data.error.message; errEl.style.display = "block"; return; }
-    var text = "";
-    try { text = data.candidates[0].content.parts[0].text; }
-    catch(e) { text = "응답을 파싱하지 못했습니다."; }
+    if (data.error) { errEl.innerHTML = "API 오류: " + data.error; errEl.style.display = "block"; return; }
+    var text = data.text || "응답을 받지 못했습니다.";
     respEl.innerHTML = "<strong>✦ AI 심리 전문가의 조언:</strong><br><br>" + text.replace(/\n/g, "<br>");
     respEl.style.display = "block";
   }).catch(function(e) {
