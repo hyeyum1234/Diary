@@ -772,7 +772,7 @@ function renderCalendar() {
   var ym = calYear + "-" + String(calMonth).padStart(2, "0");
   document.getElementById("cal-title").textContent = calYear + "년 " + calMonth + "월";
   var grid = document.getElementById("cal-grid"); grid.innerHTML = "";
-  sbGet("diaries", "select=day,emotion_emoji,emotion,sticker,content,date,ai_advice&year_month=eq." + ym + "&order=day.asc")
+  sbGet("diaries", "select=id,day,emotion_emoji,emotion,sticker,content,date,ai_advice&year_month=eq." + ym + "&order=day.asc")
     .then(function(rows) {
       var map = {};
       (rows || []).forEach(function(r) { if (r.day && !map[r.day]) map[r.day] = r; });
@@ -795,17 +795,30 @@ function renderCalendar() {
         if (entry) {
           (function(e) {
             cell.addEventListener("click", function() {
-              document.getElementById("detail-sticker").textContent = e.sticker || "";
-              document.getElementById("detail-emo").textContent = (e.emotion_emoji || e.emotion || "") + " " + (e.emotion || "");
-              document.getElementById("detail-date").textContent = e.date;
-              document.getElementById("detail-text").textContent = e.content;
-              if (e.ai_advice) {
-                document.getElementById("detail-ai-text").textContent = e.ai_advice;
-                document.getElementById("detail-ai-wrap").style.display = "block";
-              } else {
-                document.getElementById("detail-ai-wrap").style.display = "none";
-              }
-              document.getElementById("detail-modal").classList.add("open");
+              // 클릭할 때마다 최신 데이터 다시 가져오기
+              sbGet("diaries", "select=emotion_emoji,emotion,sticker,content,date,ai_advice&id=eq." + e.id)
+                .then(function(rows) {
+                  var d = (rows && rows[0]) ? rows[0] : e;
+                  document.getElementById("detail-sticker").textContent = d.sticker || "";
+                  document.getElementById("detail-emo").textContent = (d.emotion_emoji || d.emotion || "") + " " + (d.emotion || "");
+                  document.getElementById("detail-date").textContent = d.date;
+                  document.getElementById("detail-text").textContent = d.content;
+                  if (d.ai_advice) {
+                    document.getElementById("detail-ai-text").textContent = d.ai_advice;
+                    document.getElementById("detail-ai-wrap").style.display = "block";
+                  } else {
+                    document.getElementById("detail-ai-wrap").style.display = "none";
+                  }
+                  document.getElementById("detail-modal").classList.add("open");
+                }).catch(function() {
+                  // 실패하면 기존 데이터로 표시
+                  document.getElementById("detail-sticker").textContent = e.sticker || "";
+                  document.getElementById("detail-emo").textContent = (e.emotion_emoji || e.emotion || "") + " " + (e.emotion || "");
+                  document.getElementById("detail-date").textContent = e.date;
+                  document.getElementById("detail-text").textContent = e.content;
+                  document.getElementById("detail-ai-wrap").style.display = "none";
+                  document.getElementById("detail-modal").classList.add("open");
+                });
             });
           })(entry);
         }
